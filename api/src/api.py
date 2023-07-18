@@ -1,4 +1,9 @@
 from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import FileResponse, StreamingResponse
+from bson.objectid import ObjectId
+
+import base64
+import io
 
 from . import db
 
@@ -27,3 +32,18 @@ async def upload_image_file(img: UploadFile = File(...)):
         "success": True,
         "image_file_id": str(file_id),
     }
+
+
+@app.get("/img/{id}")
+async def fetch_image(id: str):
+    try:
+        fs = db.get_fs()
+        image_object = fs.get(ObjectId(id))
+        content = image_object.read()
+
+        return StreamingResponse(io.BytesIO(content))
+    except:
+        raise HTTPException(
+            status_code=404,
+            detail="Image not found!",
+        )
